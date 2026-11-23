@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body { @apply bg-ink text-white font-body; }
+  :focus-visible { outline: 2px solid #ff4a3d; outline-offset: 2px; }
+}
+
+@layer components {
+  .fld { @apply bg-panel border border-line rounded-md px-3 py-2 text-sm text-white; }
+  .btn { @apply inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition-colors; }
+  .num { -webkit-text-stroke: 3px #ff4a3d; color: transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
