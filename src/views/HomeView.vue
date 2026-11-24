@@ -31,7 +31,7 @@ function reset() { q.value = ''; minRating.value = 0; yr.value = ''; status.valu
   <div>
     <h1 class="font-display font-extrabold text-4xl sm:text-5xl">Votre prochaine série est ici.</h1>
     <p class="mt-2 text-mist max-w-xl">
-      Parcourez le catalogue, filtrez par note, année ou statut, et gardez de côté ce que vous voulez voir plus tard.
+      Parcourez le catalogue, filtrez par note, annee ou statut, et gardez de côté ce que vous voulez voir plus tard.
     </p>
 
     <section v-if="top5.length" class="mt-10" aria-labelledby="top5">
@@ -79,6 +79,10 @@ function reset() { q.value = ''; minRating.value = 0; yr.value = ''; status.valu
       </div>
 
       <p v-if="!showsStore.loading && !showsStore.error" class="mb-4 text-sm text-mist" aria-live="polite">{{ filtered.length }} serie(s)</p>
+      <p v-if="showsStore.partial" role="status" class="mb-4 rounded-md border border-line p-3 text-sm text-mist">
+  Certaines pages du catalogue n'ont pas pu être chargées.
+  <button @click="showsStore.load()" class="underline hover:text-white">Réessayer</button>
+</p>
       <ShowGrid :shows="filtered" />
     </section>
   </div>
