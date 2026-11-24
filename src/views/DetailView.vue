@@ -1,46 +1,81 @@
-<script setup>
-import { ref, computed } from 'vue'
-import { API, DAYS, fr, note, year, strip, poster, https } from '../utils'
+<script>
+import { mapStores } from 'pinia'
 import { useLaterStore } from '../stores/later'
+import { API, DAYS, fr, note, year, strip, poster, https } from '../utils'
 
-const props = defineProps({ id: String })
-const later = useLaterStore()
-const show = ref(null)
-const loading = ref(true)
-const error = ref('')
-
-async function load() {
-  try {
-    const r = await fetch(`${API}/shows/${props.id}?embed=cast`)
-    if (!r.ok) throw new Error()
-    show.value = await r.json()
-  } catch (e) {
-    error.value = 'Cette série est introuvable ou le service ne répond pas.'
-  } finally {
-    loading.value = false
+export default {
+  name: 'DetailView',
+  props: {
+    id: String
+  },
+  data() {
+    return {
+      show: null,
+      loading: true,
+      error: '',
+      retryable: false
+    }
+  },
+  computed: {
+    ...mapStores(useLaterStore),
+    saved() {
+      return this.show ? this.laterStore.isLater(this.show.id) : false
+    },
+    infos() {
+      const s = this.show
+      if (!s) return []
+      const net = s.network || s.webChannel
+      const sch = s.schedule || {}
+      const run = s.runtime || s.averageRuntime
+      const jours = (sch.days || []).map((d) => DAYS[d] || d).join(', ')
+      return [
+        ['Langue', s.language],
+        ['Type', s.type],
+        ['Durée d’un épisode', run ? run + ' min' : null],
+        ['Diffusion', [jours, sch.time].filter(Boolean).join(' à ') || null],
+        ['Chaîne', net ? net.name + (net.country ? ' (' + net.country.name + ')' : '') : null],
+        ['Première diffusion', s.premiered],
+        ['Dernière diffusion', s.ended]
+      ].filter((r) => r[1])
+    },
+    cast() {
+      return this.show && this.show._embedded ? this.show._embedded.cast.slice(0, 12) : []
+    }
+  },
+  created() {
+    this.load()
+  },
+  methods: {
+    fr,
+    note,
+    year,
+    strip,
+    poster,
+    https,
+    async load() {
+      this.loading = true
+      this.error = ''
+      this.retryable = false
+      try {
+        const r = await fetch(`${API}/shows/${this.id}?embed=cast`)
+        if (r.status === 404) {
+          this.error = 'Cette série est introuvable.'
+          return
+        }
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        this.show = await r.json()
+      } catch (e) {
+        this.error = 'Le service ne répond pas. Vérifiez votre connexion internet.'
+        this.retryable = true
+      } finally {
+        this.loading = false
+      }
+    },
+    toggle() {
+      this.laterStore.toggle(this.show)
+    }
   }
 }
-load()
-
-const infos = computed(() => {
-  const s = show.value
-  if (!s) return []
-  const net = s.network || s.webChannel
-  const sch = s.schedule || {}
-  const run = s.runtime || s.averageRuntime
-  const jours = (sch.days || []).map((d) => DAYS[d] || d).join(', ')
-  return [
-    ['Langue', s.language],
-    ['Type', s.type],
-    ['Durée d’un épisode', run ? run + ' min' : null],
-    ['Diffusion', [jours, sch.time].filter(Boolean).join(' à ') || null],
-    ['Chaîne', net ? net.name + (net.country ? ' (' + net.country.name + ')' : '') : null],
-    ['Première diffusion', s.premiered],
-    ['Dernière diffusion', s.ended]
-  ].filter((r) => r[1])
-})
-
-const cast = computed(() => (show.value?._embedded ? show.value._embedded.cast.slice(0, 12) : []))
 </script>
 
 <template>
@@ -48,7 +83,10 @@ const cast = computed(() => (show.value?._embedded ? show.value._embedded.cast.s
     <router-link to="/" class="text-sm text-mist hover:text-white">‹ Retour au catalogue</router-link>
 
     <p v-if="loading" class="py-20 text-center text-mist">Chargement…</p>
-    <p v-else-if="error" class="mt-6 rounded-md border border-ember p-4 text-ember">{{ error }}</p>
+    <div v-else-if="error" role="alert" class="mt-6 rounded-md border border-ember p-4 text-ember">
+      <p>{{ error }}</p>
+      <button v-if="retryable" @click="load" class="btn mt-3 bg-ember text-white hover:bg-red-500">Réessayer</button>
+    </div>
 
     <article v-else class="mt-6">
       <div class="grid gap-8 md:grid-cols-[320px_1fr]">
@@ -74,10 +112,10 @@ const cast = computed(() => (show.value?._embedded ? show.value._embedded.cast.s
           <p class="mt-6 max-w-2xl leading-relaxed text-mist">{{ strip(show.summary) || 'Aucune description disponible.' }}</p>
 
           <button
-            @click="later.toggle(show)" :aria-pressed="later.isLater(show.id)"
-            :class="['btn mt-6', later.isLater(show.id) ? 'bg-panel border border-ember' : 'bg-ember hover:bg-red-500']"
+            @click="toggle" :aria-pressed="saved"
+            :class="['btn mt-6', saved ? 'bg-panel border border-ember' : 'bg-ember hover:bg-red-500']"
           >
-            {{ later.isLater(show.id) ? 'Retirer de ma liste' : 'Regarder plus tard' }}
+            {{ saved ? 'Retirer de ma liste' : 'Regarder plus tard' }}
           </button>
 
           <dl class="mt-8 grid max-w-2xl gap-x-8 gap-y-3 sm:grid-cols-2">

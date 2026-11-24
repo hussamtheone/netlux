@@ -1,5 +1,4 @@
 import { defineStore } from 'pinia'
-import { ref, watch } from 'vue'
 
 const KEY = 'netlux.later'
 
@@ -7,24 +6,28 @@ function read() {
   try { return JSON.parse(localStorage.getItem(KEY) || '[]') } catch (e) { return [] }
 }
 
-export const useLaterStore = defineStore('later', () => {
-  const items = ref(read())
+export const useLaterStore = defineStore('later', {
+  state: () => ({ items: read() }),
 
-  watch(items, (v) => {
-    try { localStorage.setItem(KEY, JSON.stringify(v)) } catch (e) {}
-  }, { deep: true })
+  getters: {
+    isLater: (state) => (id) => state.items.some((s) => s.id === id)
+  },
 
-  const isLater = (id) => items.value.some((s) => s.id === id)
-
-  function toggle(s) {
-    if (isLater(s.id)) {
-      items.value = items.value.filter((x) => x.id !== s.id)
-    } else {
-      items.value.push({ id: s.id, name: s.name, image: s.image, rating: s.rating, premiered: s.premiered, status: s.status, genres: s.genres })
+  actions: {
+    toggle(s) {
+      if (this.isLater(s.id)) {
+        this.items = this.items.filter((x) => x.id !== s.id)
+      } else {
+        this.items.push({ id: s.id, name: s.name, image: s.image, rating: s.rating, premiered: s.premiered, status: s.status, genres: s.genres })
+      }
+      this.save()
+    },
+    clear() {
+      this.items = []
+      this.save()
+    },
+    save() {
+      try { localStorage.setItem(KEY, JSON.stringify(this.items)) } catch (e) {}
     }
   }
-
-  function clear() { items.value = [] }
-
-  return { items, isLater, toggle, clear }
 })

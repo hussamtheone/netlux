@@ -1,23 +1,34 @@
-<script setup>
-import { computed } from 'vue'
+<script>
+import { mapStores } from 'pinia'
 import { useShowsStore } from '../stores/shows'
 import ShowGrid from '../components/ShowGrid.vue'
 
-const props = defineProps({ genre: String })
-const showsStore = useShowsStore()
-
-const genres = computed(() => {
-  const m = {}
-  showsStore.shows.forEach((s) => (s.genres || []).forEach((g) => { m[g] = (m[g] || 0) + 1 }))
-  return Object.entries(m).sort((a, b) => a[0].localeCompare(b[0]))
-})
-const current = computed(() => props.genre || (genres.value[0] && genres.value[0][0]) || '')
-const list = computed(() => showsStore.shows.filter((s) => (s.genres || []).includes(current.value)))
+export default {
+  name: 'CategoriesView',
+  components: { ShowGrid },
+  props: {
+    genre: String
+  },
+  computed: {
+    ...mapStores(useShowsStore),
+    genres() {
+      const m = {}
+      this.showsStore.shows.forEach((s) => (s.genres || []).forEach((g) => { m[g] = (m[g] || 0) + 1 }))
+      return Object.entries(m).sort((a, b) => a[0].localeCompare(b[0]))
+    },
+    current() {
+      return this.genre || (this.genres[0] && this.genres[0][0]) || ''
+    },
+    list() {
+      return this.showsStore.shows.filter((s) => (s.genres || []).includes(this.current))
+    }
+  }
+}
 </script>
 
 <template>
   <div>
-    <h1 class="font-display font-extrabold text-4xl">Categories</h1>
+    <h1 class="font-display font-extrabold text-4xl">Catégories</h1>
 
     <nav class="mt-6 flex flex-wrap gap-2" aria-label="Catégories">
       <router-link

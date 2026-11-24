@@ -1,37 +1,62 @@
-<script setup>
-import { ref, computed } from 'vue'
-import { fr, note, year, poster } from '../utils'
+<script>
+import { mapStores } from 'pinia'
 import { useShowsStore } from '../stores/shows'
+import { fr, note, year, poster } from '../utils'
 import ShowGrid from '../components/ShowGrid.vue'
 
-const showsStore = useShowsStore()
-const q = ref('')
-const minRating = ref(0)
-const yr = ref('')
-const status = ref('')
-
-const top5 = computed(() => showsStore.shows.filter(note).sort((a, b) => note(b) - note(a)).slice(0, 5))
-const years = computed(() => [...new Set(showsStore.shows.map(year).filter(Boolean))].sort((a, b) => b - a))
-const statuses = computed(() => [...new Set(showsStore.shows.map((s) => s.status).filter(Boolean))])
-
-const filtered = computed(() => {
-  const t = q.value.trim().toLowerCase()
-  return showsStore.shows.filter((s) =>
-    (!t || s.name.toLowerCase().includes(t)) &&
-    (!minRating.value || note(s) >= minRating.value) &&
-    (!yr.value || year(s) === +yr.value) &&
-    (!status.value || s.status === status.value))
-})
-
-const active = computed(() => q.value || minRating.value || yr.value || status.value)
-function reset() { q.value = ''; minRating.value = 0; yr.value = ''; status.value = '' }
+export default {
+  name: 'HomeView',
+  components: { ShowGrid },
+  data() {
+    return {
+      q: '',
+      minRating: 0,
+      yr: '',
+      status: ''
+    }
+  },
+  computed: {
+    ...mapStores(useShowsStore),
+    top5() {
+      return this.showsStore.shows.filter(note).sort((a, b) => note(b) - note(a)).slice(0, 5)
+    },
+    years() {
+      return [...new Set(this.showsStore.shows.map(year).filter(Boolean))].sort((a, b) => b - a)
+    },
+    statuses() {
+      return [...new Set(this.showsStore.shows.map((s) => s.status).filter(Boolean))]
+    },
+    filtered() {
+      const t = this.q.trim().toLowerCase()
+      return this.showsStore.shows.filter((s) =>
+        (!t || s.name.toLowerCase().includes(t)) &&
+        (!this.minRating || note(s) >= this.minRating) &&
+        (!this.yr || year(s) === +this.yr) &&
+        (!this.status || s.status === this.status))
+    },
+    active() {
+      return Boolean(this.q || this.minRating || this.yr || this.status)
+    }
+  },
+  methods: {
+    fr,
+    note,
+    poster,
+    reset() {
+      this.q = ''
+      this.minRating = 0
+      this.yr = ''
+      this.status = ''
+    }
+  }
+}
 </script>
 
 <template>
   <div>
     <h1 class="font-display font-extrabold text-4xl sm:text-5xl">Votre prochaine série est ici.</h1>
     <p class="mt-2 text-mist max-w-xl">
-      Parcourez le catalogue, filtrez par note, annee ou statut, et gardez de côté ce que vous voulez voir plus tard.
+      Parcourez le catalogue, filtrez par note, année ou statut, et gardez de côté ce que vous voulez voir plus tard.
     </p>
 
     <section v-if="top5.length" class="mt-10" aria-labelledby="top5">
@@ -78,11 +103,11 @@ function reset() { q.value = ''; minRating.value = 0; yr.value = ''; status.valu
         <button v-if="active" @click="reset" class="btn bg-panel hover:bg-line">Réinitialiser</button>
       </div>
 
-      <p v-if="!showsStore.loading && !showsStore.error" class="mb-4 text-sm text-mist" aria-live="polite">{{ filtered.length }} serie(s)</p>
+      <p v-if="!showsStore.loading && !showsStore.error" class="mb-4 text-sm text-mist" aria-live="polite">{{ filtered.length }} série(s)</p>
       <p v-if="showsStore.partial" role="status" class="mb-4 rounded-md border border-line p-3 text-sm text-mist">
-  Certaines pages du catalogue n'ont pas pu être chargées.
-  <button @click="showsStore.load()" class="underline hover:text-white">Réessayer</button>
-</p>
+        Certaines pages du catalogue n'ont pas pu être chargées.
+        <button @click="showsStore.load()" class="underline hover:text-white">Réessayer</button>
+      </p>
       <ShowGrid :shows="filtered" />
     </section>
   </div>

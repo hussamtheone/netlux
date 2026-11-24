@@ -1,14 +1,22 @@
-<script setup>
-import { useRoute } from 'vue-router'
+<script>
+import { mapStores } from 'pinia'
 import { useLaterStore } from './stores/later'
 
-const route = useRoute()
-const later = useLaterStore()
-const links = [
-  { name: 'home', to: '/', label: 'Accueil' },
-  { name: 'cat', to: '/categories', label: 'Categories' },
-  { name: 'later', to: '/later', label: 'À regarder plus tard' }
-]
+export default {
+  name: 'App',
+  data() {
+    return {
+      links: [
+        { name: 'home', to: '/', label: 'Accueil' },
+        { name: 'cat', to: '/categories', label: 'Catégories' },
+        { name: 'later', to: '/later', label: 'À regarder plus tard' }
+      ]
+    }
+  },
+  computed: {
+    ...mapStores(useLaterStore)
+  }
+}
 </script>
 
 <template>
@@ -17,11 +25,11 @@ const links = [
       <router-link to="/" class="font-display font-extrabold text-2xl text-ember">Netlux</router-link>
       <router-link
         v-for="l in links" :key="l.to" :to="l.to"
-        :class="['text-sm font-medium hover:text-white', route.name === l.name ? 'text-white' : 'text-mist']"
+        :class="['text-sm font-medium hover:text-white', $route.name === l.name ? 'text-white' : 'text-mist']"
       >
         {{ l.label }}
-        <span v-if="l.name === 'later' && later.items.length" class="ml-1 rounded-full bg-ember px-2 py-0.5 text-xs">
-          {{ later.items.length }}
+        <span v-if="l.name === 'later' && laterStore.items.length" class="ml-1 rounded-full bg-ember px-2 py-0.5 text-xs">
+          {{ laterStore.items.length }}
         </span>
       </router-link>
     </nav>
@@ -31,5 +39,5 @@ const links = [
     <router-view :key="$route.fullPath" />
   </main>
 
-  <footer class="border-t border-line py-6 text-center text-sm text-mist">Donnees fournies par l’API TVMaze.</footer>
+  <footer class="border-t border-line py-6 text-center text-sm text-mist">Données fournies par l’API TVMaze.</footer>
 </template>
